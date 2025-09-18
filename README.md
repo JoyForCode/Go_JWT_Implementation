@@ -53,6 +53,6 @@ go run cmd/server/main.go
 - Gorilla Mux - HTTP router 
 - golang-jwt/jwt - JWT handling 
 - godotenv - Environment variables 
-=======
+
 # Go_JWT_Implementation
 JWT Authentication System in Go with Clean Architecture
