@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"jwt_clean/internal/auth"
 	"jwt_clean/internal/service"
+	"jwt_clean/error"
 	"net/http"
 )
 
@@ -20,13 +21,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var loginReq auth.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
-		http.Error(w, `{"error","Invalid request payload"}`, http.StatusBadRequest)
+		//http.Error(w, `{"error","Invalid request payload"}`, http.StatusBadRequest)
+		apperror.WriteError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	tokenPair, err := h.authService.Login(loginReq.Username, loginReq.Password)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid Credentials"}`, http.StatusUnauthorized)
+		//http.Error(w, `{"error":"Invalid Credentials"}`, http.StatusUnauthorized)
+		apperror.WriteError(w, http.StatusUnauthorized, "Invalid Credentials")
 		return
 	}
 
@@ -38,13 +41,15 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 	var refreshReq auth.RefreshTokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&refreshReq); err != nil {
-		http.Error(w, `{"error":"Invalid request payload"}`, http.StatusUnauthorized)
+		//http.Error(w, `{"error":"Invalid request payload"}`, http.StatusUnauthorized)
+		apperror.WriteError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	tokenPair, err := h.authService.RefreshAccessToken(refreshReq.RefreshToken)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid refresh token"}`, http.StatusUnauthorized)
+		//http.Error(w, `{"error":"Invalid refresh token"}`, http.StatusUnauthorized)
+		apperror.WriteError(w, http.StatusUnauthorized, "Invalid refresh token")
 		return
 	}
 
