@@ -33,12 +33,22 @@ func main() {
 	authMiddleware := middleware.NewAuthMiddleware(authService)
 	tokenHandler := handlers.NewTokenHandler(authService)
 	protectedHandler := handlers.NewProtectedHandler()
+	authHandler := handlers.NewAuthHandler(authService)
 	//define routes here
+
+	//public routes for checks
 	r.HandleFunc("/", testServer).Methods("GET")
 	r.HandleFunc("/check", healthCheck).Methods("GET")
+
+	//New Authentication Routes
+	r.HandleFunc("/login", authHandler.Login).Methods("POST")
+	r.HandleFunc("/refresh_token", authHandler.RefreshToken).Methods("POST")
+
+	//Legacy token routes for backward compability and tests
 	r.HandleFunc("/generate_token", tokenHandler.GenerateToken).Methods("GET")
 	r.HandleFunc("/parse_token", tokenHandler.ParseToken).Methods("GET")
 
+	//protected routes
 	r.HandleFunc("/dashboard", authMiddleware.RequireAuth(protectedHandler.Dashboard)).Methods("GET")
 	r.HandleFunc("/profile", authMiddleware.RequireAuth(protectedHandler.Profile)).Methods("GET")
 	r.HandleFunc("/settings", authMiddleware.RequireAuth(protectedHandler.Settings)).Methods("GET")
