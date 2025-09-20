@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"encoding/json"
 	"jwt_clean/internal/service"
+	"jwt_clean/error"
 	"net/http"
 )
 
@@ -18,30 +18,32 @@ func (h *TokenHandler) GenerateToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	username := r.URL.Query().Get("username")
 	if username == "" {
-		http.Error(w, `{"error":"Username required"}`, http.StatusBadRequest)
+		apperror.WriteError(w, http.StatusBadRequest, apperror.ErrMissingRequiredField)
 		return
 	}
 
 	token, err := h.authService.GenerateToken(username)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to generate token"}`, http.StatusInternalServerError)
+		apperror.LogWarning("Token generation failed for user %s: %v", username, err)
+		apperror.WriteError(w, http.StatusInternalServerError, apperror.ErrTokenGenerationFailed)
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	apperror.WriteSuccess(w, "Token generated successfully", map[string]string{"token": token})
 }
 
 func (h *TokenHandler) ParseToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	tokenString := r.URL.Query().Get("token")
 	if tokenString == "" {
-		http.Error(w, `{"error":"Token required"}`, http.StatusBadRequest)
+		apperror.WriteError(w, http.StatusBadRequest, apperror.ErrMissingToken)
 		return
 	}
 
 	claims, err := h.authService.ParseToken(tokenString)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid Token"}`, http.StatusUnauthorized)
+		apperror.LogWarning("Token parse failed for token: %s, error: %v", tokenString, err)
+		apperror.WriteError(w, http.StatusUnauthorized, apperror.ErrInvalidToken)
 		return
 	}
 
@@ -53,5 +55,5 @@ func (h *TokenHandler) ParseToken(w http.ResponseWriter, r *http.Request) {
 		"expires_at": claims.ExpiresAt.Time,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	apperror.WriteSuccess(w, "Token parsed successfully", response)
 }

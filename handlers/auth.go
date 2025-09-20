@@ -52,7 +52,7 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if refreshReq.RefreshToken == "" {
-		apperror.WriteError(w, http.StatusBadRequest, "Refresh token is required")
+		apperror.WriteError(w, http.StatusBadRequest, apperror.ErrMissingToken)
 		return
 	}
 

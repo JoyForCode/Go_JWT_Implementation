@@ -5,6 +5,7 @@ import (
 	"time"
 	"encoding/json"
 	"net/http"
+	"errors"
 )
 
 type ErrorResponse struct {
@@ -19,37 +20,37 @@ type SuccessResponse struct {
 	TimeStamp string `json:"timestamp"`
 }
 
-const (
+var (
 	//Authentication errors
-	ErrInvalidCredentials = "Invalid Credentials"
-	ErrMissingCredentials = "Username and password are required"
-	ErrTokenGenerationFailed = "Failed to generate token"
+	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrMissingCredentials = errors.New("username and password are required")
+	ErrTokenGenerationFailed = errors.New("failed to generate token")
 	
 	// Token validation errors
-	ErrMissingToken = "Authorization token is required"
-	ErrInvalidToken = "Invalid token"
-	ErrExpiredToken = "Token has expired"
-	ErrMalformedToken = "Token format is invalid"
-	ErrTokenNotActive = "Token is not yet active"
+	ErrMissingToken = errors.New("authorization token is required")
+	ErrInvalidToken = errors.New("invalid token")
+	ErrExpiredToken = errors.New("token has expired")
+	ErrMalformedToken = errors.New("token format is invalid")
+	ErrTokenNotActive = errors.New("token is not yet active")
 	
 	// Request errors
-	ErrInvalidJSON = "Invalid JSON format"
-	ErrMissingRequiredField = "Required field is missing"
+	ErrInvalidJSON = errors.New("invalid json format")
+	ErrMissingRequiredField = errors.New("required field is missing")
 	
 	// Server errors
-	ErrInternalServer = "Internal server error"
+	ErrInternalServer = errors.New("internal server error")
 )
 
 func getCurrentTimeStamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
 
-func WriteError(w http.ResponseWriter, statusCode int, message string) {
+func WriteError(w http.ResponseWriter, statusCode int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
 	response:=ErrorResponse{
-		Error: message,
+		Error: err.Error(),
 		TimeStamp: getCurrentTimeStamp(),
 	}
 
@@ -57,15 +58,23 @@ func WriteError(w http.ResponseWriter, statusCode int, message string) {
 		log.Printf("Failed to encode error response: %v", err)
 	}
 
-	log.Printf("[ERROR] %d - %s", statusCode, message)
+	log.Printf("[ERROR] %d - %s", statusCode, err)
 }
 
-func WriteErrorWithCode(w http.ResponseWriter, statusCode int, message, code string) {
+func WriteAppError(w http.ResponseWriter, statusCode int, err error, code string) {
+	if code==""{
+		WriteError(w, statusCode, err)
+		return
+	}
+	WriteErrorWithCode(w, statusCode, err, code)
+}
+
+func WriteErrorWithCode(w http.ResponseWriter, statusCode int, err error, code string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
 	response:=ErrorResponse{
-		Error: message,
+		Error: err.Error(),
 		Code: code,
 		TimeStamp: getCurrentTimeStamp(),
 	}
@@ -74,7 +83,7 @@ func WriteErrorWithCode(w http.ResponseWriter, statusCode int, message, code str
 		log.Printf("Failed to encode error response: %v", err)
 	}
 
-	log.Printf("[ERROR] %d - %s (Code: %s)", statusCode, message, code)
+	log.Printf("[ERROR] %d - %s (Code: %s)", statusCode, err, code)
 }
 
 func WriteSuccess(w http.ResponseWriter, message string, data any) {
