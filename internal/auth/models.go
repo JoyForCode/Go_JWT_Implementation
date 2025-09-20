@@ -11,8 +11,8 @@ type LoginRequest struct {
 
 type Claims struct {
 	jwt.RegisteredClaims
-	TokenType TokenType `josn:"token_type"`
-	UserID    string    `josn:"user_id,omitempty"`
+	TokenType TokenType `json:"token_type"`
+	UserID    string    `json:"user_id,omitempty"`
 }
 
 type TokenType string

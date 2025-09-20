@@ -46,7 +46,7 @@ func (h *ProtectedHandler) Profile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProtectedHandler) Settings(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "applcation/json")
+	w.Header().Set("Content-Type", "application/json")
 
 	username, _ := middleware.GetUserFromContext(r.Context())
 	response := map[string]any{
