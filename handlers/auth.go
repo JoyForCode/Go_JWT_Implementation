@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"encoding/json"
 	"jwt_clean/internal/auth"
 	"jwt_clean/internal/service"
+	"jwt_clean/error"
 	"net/http"
 )
 
@@ -19,34 +19,50 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var loginReq auth.LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&loginReq); err != nil {
-		http.Error(w, `{"error","Invalid request payload"}`, http.StatusBadRequest)
+	if err := apperror.ValidateJSON(r, &loginReq); err != nil {
+		apperror.LogWarning("Invalid JSON in login request: %v", err)
+		apperror.WriteError(w, http.StatusBadRequest, apperror.ErrInvalidJSON)
+		return
+	}
+
+	if loginReq.Username == "" || loginReq.Password == "" {
+		apperror.WriteError(w, http.StatusBadRequest, apperror.ErrMissingCredentials)
 		return
 	}
 
 	tokenPair, err := h.authService.Login(loginReq.Username, loginReq.Password)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid Credentials"}`, http.StatusUnauthorized)
+		apperror.LogWarning("Login failed for user: %s, error: %v", loginReq.Username, err)
+		apperror.WriteError(w, http.StatusUnauthorized, apperror.ErrInvalidCredentials)
 		return
 	}
 
-	json.NewEncoder(w).Encode(tokenPair)
+	apperror.LogInfo("User %s logged in successfully", loginReq.Username)
+	apperror.WriteSuccess(w, "Login successful", tokenPair)
 }
 
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var refreshReq auth.RefreshTokenRequest
-	if err := json.NewDecoder(r.Body).Decode(&refreshReq); err != nil {
-		http.Error(w, `{"error":"Invalid request payload"}`, http.StatusUnauthorized)
+	if err := apperror.ValidateJSON(r, &refreshReq); err != nil {
+		apperror.LogWarning("Invalid JSON in refresh token request: %v", err)
+		apperror.WriteError(w, http.StatusBadRequest, apperror.ErrInvalidJSON)
+		return
+	}
+
+	if refreshReq.RefreshToken == "" {
+		apperror.WriteError(w, http.StatusBadRequest, apperror.ErrMissingToken)
 		return
 	}
 
 	tokenPair, err := h.authService.RefreshAccessToken(refreshReq.RefreshToken)
 	if err != nil {
-		http.Error(w, `{"error":"Invalid refresh token"}`, http.StatusUnauthorized)
+		apperror.LogWarning("Refresh token failed: %v", err)
+		apperror.WriteError(w, http.StatusUnauthorized, apperror.ErrInvalidToken)
 		return
 	}
 
-	json.NewEncoder(w).Encode(tokenPair)
+	apperror.LogInfo("Token refreshed successfully")
+	apperror.WriteSuccess(w, "Token refreshed successfully", tokenPair)
 }
