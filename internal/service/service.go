@@ -22,7 +22,7 @@ func NewAuthService(jwtSecret []byte) *Service {
 	}
 }
 
-func (s *Service) newClaims(username, issuer string, audience jwt.ClaimStrings , duration time.Duration, tokenType auth.TokenType) auth.Claims {
+func (s *Service) newClaims(username, issuer string, audience jwt.ClaimStrings , duration time.Duration, jwtid string, tokenType auth.TokenType) auth.Claims {
 	return auth.Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    issuer,
@@ -30,6 +30,7 @@ func (s *Service) newClaims(username, issuer string, audience jwt.ClaimStrings ,
 			Audience: audience,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+			ID: jwtid,
 		},
 		TokenType: tokenType,
 		UserID:    username, //Scheduled for deprecation.
@@ -37,19 +38,19 @@ func (s *Service) newClaims(username, issuer string, audience jwt.ClaimStrings ,
 }
 
 func (s *Service) GenerateToken(username string) (string, error) { //Test function for checks
-	claims := s.newClaims(username, "myApp", jwt.ClaimStrings{"my_app_users"}, time.Hour, auth.AccessTokenType)
+	claims := s.newClaims(username, "myApp", jwt.ClaimStrings{"my_app_users"}, time.Hour, "12345", auth.AccessTokenType)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.jwtSecret)
 }
 
 func (s *Service) GenerateAccessToken(username string) (string, error) {
-	claims := s.newClaims(username, "myApp", jwt.ClaimStrings{"my_app_users"}, 15*time.Minute, auth.AccessTokenType)
+	claims := s.newClaims(username, "myApp", jwt.ClaimStrings{"my_app_users"}, 15*time.Minute, "12345", auth.AccessTokenType)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.jwtSecret)
 }
 
 func (s *Service) GenerateRefreshToken(username string) (string, error) {
-	claims := s.newClaims(username, "myApp", jwt.ClaimStrings{"my_app_users"}, 7*24*time.Hour, auth.RefreshTokenType)
+	claims := s.newClaims(username, "myApp", jwt.ClaimStrings{"my_app_users"}, 7*24*time.Hour, "12345", auth.RefreshTokenType)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.jwtSecret)
 }
